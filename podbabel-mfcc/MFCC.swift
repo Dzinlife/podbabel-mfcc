@@ -35,14 +35,12 @@ func getAudioBuffer(audioFile: AVAudioFile, framesReadCount: Int, channel: Int? 
         
         return (audioArray, 1)
     } else {
-        var multiChannelAudioData = [[Float]]()
+        var flattenedAudioData = [Float]()
         for channel in 0..<channelCount {
             let frames = Int(buffer.frameLength)
             let audioBuffer = buffer.floatChannelData![channel]
-            let audioArray = Array(UnsafeBufferPointer(start: audioBuffer, count: frames))
-            multiChannelAudioData.append(audioArray)
+            flattenedAudioData.append(contentsOf: Array(UnsafeBufferPointer(start: audioBuffer, count: frames)))
         }
-        let flattenedAudioData = multiChannelAudioData.flatMap { $0 }
         
         return (flattenedAudioData, channelCount)
     }
@@ -56,7 +54,7 @@ func reshape(_ array: [NSNumber], itemsPerRow: Int) -> [[NSNumber]] {
 
 func calcMFCC (audioData: [Float], channelCount: Int, sampleRate: Int, mfcc_module: TorchModule, n_mfcc: Int = 2) throws -> [[NSNumber]] {
     var data = audioData
-    guard let rawResult = mfcc_module.predictAudio(&data, withLength: Int32(audioData.count / channelCount), withChannels: Int32(channelCount), withSampleRate: Int32(sampleRate))
+    guard let rawResult = mfcc_module.predictAudio(audioBuffer: &data, withLength: Int32(audioData.count / channelCount), withChannels: Int32(channelCount), withSampleRate: Int32(sampleRate))
     else {
         throw Errors.mfcc("")
     }
